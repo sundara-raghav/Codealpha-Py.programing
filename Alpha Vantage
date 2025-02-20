@@ -1,0 +1,71 @@
+from alpha_vantage.timeseries import TimeSeries
+
+API_KEY = "YOUR_ALPHA_VANTAGE_API_KEY"  # Replace with your API key
+
+class StockPortfolio:
+    def __init__(self):
+        self.portfolio = {}
+
+    def add_stock(self, symbol, shares):
+        if symbol in self.portfolio:
+            self.portfolio[symbol] += shares
+        else:
+            self.portfolio[symbol] = shares
+        print(f"Added {shares} shares of {symbol} to portfolio.")
+
+    def remove_stock(self, symbol, shares):
+        if symbol in self.portfolio:
+            if shares >= self.portfolio[symbol]:
+                del self.portfolio[symbol]
+                print(f"Removed {symbol} from portfolio.")
+            else:
+                self.portfolio[symbol] -= shares
+                print(f"Removed {shares} shares of {symbol}. Remaining: {self.portfolio[symbol]} shares.")
+        else:
+            print(f"Stock {symbol} not found in portfolio.")
+
+    def get_stock_price(self, symbol):
+        try:
+            ts = TimeSeries(key=API_KEY, output_format="json")
+            data, _ = ts.get_quote_endpoint(symbol=symbol)
+            if "05. price" in data:
+                return float(data["05. price"])
+            else:
+                print(f"No price data available for {symbol}.")
+                return None
+        except Exception as e:
+            print(f"Could not retrieve data for {symbol}: {e}")
+            return None
+
+    def view_portfolio(self):
+        total_value = 0
+        print("\nPortfolio Summary:")
+        for symbol, shares in self.portfolio.items():
+            price = self.get_stock_price(symbol)
+            if price is not None:
+                stock_value = price * shares
+                total_value += stock_value
+                print(f"{symbol}: {shares} shares @ ${price:.2f} = ${stock_value:.2f}")
+        print(f"Total Portfolio Value: ${total_value:.2f}\n")
+
+if __name__ == "__main__":
+    portfolio = StockPortfolio()
+    
+    while True:
+        print("1. Add Stock\n2. Remove Stock\n3. View Portfolio\n4. Exit")
+        choice = input("Enter choice: ")
+        
+        if choice == "1":
+            symbol = input("Enter stock symbol: ").upper()
+            shares = int(input("Enter number of shares: "))
+            portfolio.add_stock(symbol, shares)
+        elif choice == "2":
+            symbol = input("Enter stock symbol: ").upper()
+            shares = int(input("Enter number of shares to remove: "))
+            portfolio.remove_stock(symbol, shares)
+        elif choice == "3":
+            portfolio.view_portfolio()
+        elif choice == "4":
+            break
+        else:
+            print("Invalid choice. Please try again.")
